@@ -3,9 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import './HomePage.css';
 import { LuUsersRound } from "react-icons/lu";
 import { TiUserAddOutline } from "react-icons/ti";
+import { account } from '../utils/appwrite';
+import { useUser } from '../App';
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const { user, setUser } = useUser();
 
   const handleCreateRoom = () => {
     navigate('/create-room');
@@ -15,11 +18,32 @@ const HomePage = () => {
     navigate('/join-room');
   };
 
+  const handleLogout = async () => {
+    await account.deleteSession('current');
+    setUser(null); // Clear user context
+    navigate('/login', { replace: true });
+  };
+
+  // Try to use first or middle name, fallback to name or email
+  let userName = '';
+  if (user) {
+    const name = user.name || user.email || '';
+    userName = name.split(' ')[1] || name.split(' ')[0] || name;
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-800 to-black flex flex-col items-center justify-center text-white">
-      <div className="flex flex-col items-center text-center">
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-800 to-black flex flex-col">
+      <div className="flex justify-end p-6">
+        <button
+          onClick={handleLogout}
+          className="px-5 py-2 text-base md:text-lg font-semibold bg-gray-800 hover:bg-red-600 text-white rounded-lg shadow-md transition-colors duration-300"
+        >
+          Logout
+        </button>
+      </div>
+      <div className="flex flex-col items-center text-center flex-1 justify-center text-white">
         <h1 className="text-4xl md:text-6xl font-bold mb-6 text-shadow-glow">
-          Welcome to UnDoubt!
+          Welcome{userName ? `, ${userName}` : ''} to UnDoubt!
         </h1>
         <p className="text-lg md:text-2xl mb-10">
           Create or join a room to start collaborating with others.
