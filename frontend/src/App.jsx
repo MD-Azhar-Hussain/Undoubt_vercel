@@ -1,24 +1,16 @@
-<<<<<<< HEAD
 import React, { useEffect, useState, createContext, useContext } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-=======
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { logOut } from './config/firebase';
 import ProtectedRoute from './components/ProtectedRoute';
->>>>>>> saketh1607/main
 import HomePage from './pages/HomePage';
 import CreateRoomPage from './pages/CreateRoomPage';
 import JoinRoomPage from './pages/JoinRoomPage';
 import RoomPage from './pages/RoomPage';
 import LoginPage from './pages/LoginPage';
-<<<<<<< HEAD
 import { account } from './utils/appwrite';
-=======
 import AccessDeniedPage from './pages/AccessDeniedPage';
 import { toast } from 'react-toastify';
->>>>>>> saketh1607/main
 import './App.css';
 
 const UserContext = createContext({ user: null, setUser: () => {} });
@@ -90,54 +82,6 @@ const Navigation = () => {
   );
 };
 
-function ProtectedRoute({ children }) {
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const { setUser } = useUser();
-  const location = useLocation();
-
-  useEffect(() => {
-    account.get().then((user) => {
-      setIsAuthenticated(true);
-      setUser(user);
-      setLoading(false);
-    }).catch(() => {
-      setIsAuthenticated(false);
-      setUser(null);
-      setLoading(false);
-    });
-  }, [setUser]);
-
-  if (loading) return null;
-  if (!isAuthenticated) return <Navigate to="/login" state={{ from: location }} replace />;
-  return children;
-}
-
-<<<<<<< HEAD
-const App = () => {
-  const [user, setUser] = useState(null);
-  const navigate = useNavigate();
-
-  // Clear user on logout (listen for navigation to /login)
-  useEffect(() => {
-    const unlisten = navigate((location) => {
-      if (location.pathname === '/login') setUser(null);
-    });
-    return unlisten;
-  }, [navigate]);
-
-  return (
-    <UserContext.Provider value={{ user, setUser }}>
-      <Navigation />
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-        <Route path="/create-room" element={<ProtectedRoute><CreateRoomPage /></ProtectedRoute>} />
-        <Route path="/join-room" element={<ProtectedRoute><JoinRoomPage /></ProtectedRoute>} />
-        <Route path="/join-room/:roomId" element={<ProtectedRoute><JoinRoomPage /></ProtectedRoute>} />
-        <Route path="/room/:roomId" element={<ProtectedRoute><RoomPage role="participant" /></ProtectedRoute>} />
-        <Route path="/host/:roomId" element={<ProtectedRoute><RoomPage role="host" /></ProtectedRoute>} />
-=======
 const AppContent = () => {
   const { isAuthenticated, loading } = useAuth();
 
@@ -198,21 +142,11 @@ const AppContent = () => {
             <ProtectedRoute><RoomPage role="host" /></ProtectedRoute>
           }
         />
->>>>>>> saketh1607/main
       </Routes>
-    </UserContext.Provider>
+    </Router>
   );
 };
 
-<<<<<<< HEAD
-export default function AppWithRouter() {
-  return (
-    <Router>
-      <App />
-    </Router>
-  );
-}
-=======
 const App = () => {
   return (
     <AuthProvider>
@@ -222,6 +156,5 @@ const App = () => {
 };
 
 export default App;
->>>>>>> saketh1607/main
 
 

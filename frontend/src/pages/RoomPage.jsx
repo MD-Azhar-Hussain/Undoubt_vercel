@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import socket from '../utils/socket';
 import QRCode from 'react-qr-code';
-import { FaCopy, FaEye, FaEyeSlash, FaCheck, FaThumbsUp } from 'react-icons/fa';
+import { FaCopy, FaEye, FaEyeSlash, FaCheck, FaThumbsUp, FaQuestionCircle, FaCheckCircle, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
@@ -25,6 +25,8 @@ const RoomPage = ({ role }) => {
   const [visibleEmails, setVisibleEmails] = useState(new Set());
   const [isRoomClosed, setIsRoomClosed] = useState(false);
   const [roomClosureMessage, setRoomClosureMessage] = useState('');
+  const [activeTab, setActiveTab] = useState('active'); // 'active' or 'answered'
+  const [showQRCode, setShowQRCode] = useState(true);
 
   useEffect(() => {
     socket.emit('joinRoom', roomId, role);
@@ -72,6 +74,11 @@ const RoomPage = ({ role }) => {
           doubt.id === doubtId ? { ...doubt, answered } : doubt
         )
       );
+      toast.success('Doubt marked as answered!', {
+        position: "top-right",
+        autoClose: 3000,
+        theme: "colored",
+      });
     });
 
     socket.on('roomClosed', () => {
@@ -110,12 +117,17 @@ const RoomPage = ({ role }) => {
       text: newDoubt,
       user: user.emailAddresses[0].emailAddress,
       upvotes: 0,
-      createdAt: new Date().toISOString(), // Add createdAt field
+      createdAt: new Date().toISOString(),
       answered: false,
     };
     socket.emit('newDoubt', roomId, doubt);
     setNewDoubt('');
-    setSimilarity(0); // Reset similarity percentage to 0.00%
+    setSimilarity(0);
+    toast.success('Doubt submitted successfully!', {
+      position: "top-right",
+      autoClose: 3000,
+      theme: "colored",
+    });
   };
 
   const handleToggleUpvote = (id) => {
@@ -162,7 +174,6 @@ const RoomPage = ({ role }) => {
         console.error('Failed to copy Room ID:', err);
       });
     } else {
-      // Fallback method for copying text to clipboard
       const textArea = document.createElement('textarea');
       textArea.value = roomId;
       document.body.appendChild(textArea);
@@ -197,12 +208,10 @@ const RoomPage = ({ role }) => {
       return;
     }
 
-    // Filter out any undefined/null text values and ensure we have valid strings
     const existingDoubtTexts = doubts
       .filter(doubt => doubt && doubt.text && typeof doubt.text === 'string')
       .map(doubt => doubt.text);
 
-    // Only calculate similarity if there are existing doubts
     if (existingDoubtTexts.length === 0) {
       setSimilarity(0);
       return;
@@ -212,118 +221,311 @@ const RoomPage = ({ role }) => {
     setSimilarity(bestMatch.bestMatch.rating * 100);
   };
 
+  const toggleQRCode = () => {
+    setShowQRCode((prev) => !prev);
+  };
+
+  // Download doubts/questions as a text file
+  const handleDownloadDoubts = () => {
+    if (!doubts || doubts.length === 0) {
+      toast.info('No doubts to download.');
+      return;
+    }
+    const lines = doubts.map((d, idx) => `${idx + 1}. ${d.text} [${d.answered ? 'Answered' : 'Active'}]`);
+    const content = lines.join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `room_${roomId}_doubts.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Separate active and answered doubts
+  const activeDoubts = doubts.filter(doubt => !doubt.answered);
+  const answeredDoubts = doubts.filter(doubt => doubt.answered);
+
   // Sort doubts by upvotes and then by creation time
-  const sortedDoubts = doubts.sort((a, b) => {
+  const sortedActiveDoubts = activeDoubts.sort((a, b) => {
     if (b.upvotes === a.upvotes) {
       return new Date(a.createdAt) - new Date(b.createdAt);
     }
     return b.upvotes - a.upvotes;
   });
 
-  const [showQRCode, setShowQRCode] = useState(true); // New state for QR code visibility
+  const sortedAnsweredDoubts = answeredDoubts.sort((a, b) => {
+    if (b.upvotes === a.upvotes) {
+      return new Date(a.createdAt) - new Date(b.createdAt);
+    }
+    return b.upvotes - a.upvotes;
+  });
 
-const toggleQRCode = () => {
-  setShowQRCode((prev) => !prev);
-};
+  const DoubtCard = ({ doubt, isAnswered = false }) => (
+    <div
+      className={`relative p-4 mb-4 rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl transform hover:scale-[1.02] ${
+        isAnswered 
+          ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200' 
+          : 'bg-white border-2 border-blue-200'
+      }`}
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex-1 mr-3">
+          <p className={`text-lg font-medium mb-2 ${isAnswered ? 'text-green-800' : 'text-gray-800'}`}>
+            {doubt.text}
+          </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <span className={`text-sm font-semibold ${isAnswered ? 'text-green-600' : 'text-blue-600'}`}>
+                {doubt.upvotes} upvotes
+              </span>
+              {isAnswered && (
+                <span className="text-sm text-green-600 font-semibold flex items-center">
+                  <FaCheckCircle className="mr-1" />
+                  Answered
+                </span>
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              {role === 'host' && (
+                <>
+                  <button
+                    onClick={() => handleToggleEmailVisibility(doubt.id)}
+                    className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
+                    title={visibleEmails.has(doubt.id) ? 'Hide email' : 'Show email'}
+                  >
+                    {visibleEmails.has(doubt.id) ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                  {visibleEmails.has(doubt.id) && (
+                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                      {doubt.user}
+                    </span>
+                  )}
+                  {!isAnswered && (
+                    <button
+                      onClick={() => handleMarkAsAnswered(doubt.id)}
+                      className="p-2 text-green-600 hover:text-green-800 transition-colors"
+                      title="Mark as answered"
+                    >
+                      <FaCheck />
+                    </button>
+                  )}
+                </>
+              )}
+              <button
+                onClick={() => handleToggleUpvote(doubt.id)}
+                className={`p-2 rounded-full transition-all duration-200 ${
+                  upvotedDoubts.has(doubt.id) 
+                    ? 'text-blue-600 bg-blue-100' 
+                    : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                }`}
+                title={upvotedDoubts.has(doubt.id) ? 'Remove upvote' : 'Upvote'}
+              >
+                <FaThumbsUp />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
-    <div className='flex flex-col md:flex-col md:justify-center md:gap-20 items-center pt-12 bg-gradient-to-br from-blue-900 via-purple-800 to-black text-white'>
-      <div className='md:flex md:flex-col md:items-center'>
-      <h1 className='text-3xl md:text-5xl text-center'>Room ID: {roomId}<FaCopy onClick={handleCopyRoomId} className='cursor-pointer inline-block ml-2 text-3xl' /></h1>
-      {roomClosureMessage && <p className='text-xl text-red-600'>{roomClosureMessage}</p>}
-      {role !== 'participant' && (
-        <div className='flex flex-col items-center justify-center mt-10'>
-          <div className='flex justify-center items-center'>
-          <button
-            onClick={toggleQRCode}
-            className='px-6 py-3 text-sm md:text-xl font-semibold bg-blue-600 hover:bg-blue-700 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300 mr-2 cursor-pointer'
-          >
-            {showQRCode ? 'Hide QR Code' : 'Show QR Code'}
-          </button>
-          <button onClick={handleCloseRoom} className='px-6 py-3 text-sm md:text-xl font-semibold bg-red-600 hover:bg-red-700 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300 ml-2 cursor-pointer'>Close Room</button>
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-800 to-black text-white">
+      {/* Header Section */}
+      <div className="sticky top-0 z-50 bg-gray-900 bg-opacity-95 backdrop-blur-sm border-b border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">
+                Room: {roomId}
+              </h1>
+              <button
+                onClick={handleCopyRoomId}
+                className="p-2 text-gray-300 hover:text-white transition-colors"
+                title="Copy Room ID"
+              >
+                <FaCopy />
+              </button>
+            </div>
+            <div className="flex items-center space-x-2">
+              {role !== 'participant' && (
+                <>
+                  <button
+                    onClick={toggleQRCode}
+                    className="px-3 py-1.5 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                  >
+                    {showQRCode ? 'Hide QR' : 'Show QR'}
+                  </button>
+                  <button
+                    onClick={handleCloseRoom}
+                    className="px-3 py-1.5 text-xs sm:text-sm bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                  >
+                    Close Room
+                  </button>
+                </>
+              )}
+              {role !== 'host' && (
+                <button
+                  onClick={handleLeaveRoom}
+                  className="px-3 py-1.5 text-xs sm:text-sm bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  Leave
+                </button>
+              )}
+            </div>
           </div>
-          {showQRCode && (
-            <div className='flex flex-col items-center'>
-            <QRCode className='mb-5 mt-5' value={`${FRONTEND_URL}/room/${roomId}`} />
-            <p className='text-lg md:text-2xl text-center'>Share this QR code with users to join the room.</p>
+        </div>
+      </div>
+
+      {/* QR Code Section (for hosts) */}
+      {role !== 'participant' && showQRCode && (
+        <div className="bg-gray-800 bg-opacity-50 p-4 border-b border-gray-700">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-8">
+            <QRCode 
+              value={`${FRONTEND_URL}/room/${roomId}`} 
+              className="w-32 h-32 sm:w-40 sm:h-40"
+            />
+            <div className="text-center sm:text-left">
+              <p className="text-sm sm:text-base text-gray-300">
+                Share this QR code with participants
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Room ID: {roomId}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Room Closure Message */}
+      {roomClosureMessage && (
+        <div className="bg-red-600 text-white p-4 text-center flex flex-col items-center gap-4">
+          <p className="text-lg font-semibold">{roomClosureMessage}</p>
+          {/* Download Doubts Button (visible to all users after room is closed) */}
+          <button
+            onClick={handleDownloadDoubts}
+            className="mt-2 px-6 py-3 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-700 hover:from-purple-700 hover:to-indigo-800 text-white font-semibold rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105"
+          >
+            Download All Doubts
+          </button>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Doubt Input Section (for participants) */}
+        {role === 'participant' && !isRoomClosed && (
+          <div className="mb-8 bg-white bg-opacity-10 rounded-xl p-6 backdrop-blur-sm border border-white border-opacity-20">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <FaQuestionCircle className="text-blue-400" />
+                <h2 className="text-xl font-semibold">Ask Your Doubt</h2>
+              </div>
+              <textarea
+                value={newDoubt}
+                onChange={handleDoubtChange}
+                placeholder="Type your doubt here..."
+                className="w-full h-24 p-4 bg-white bg-opacity-95 text-gray-800 rounded-lg border-2 border-blue-200 focus:border-blue-400 focus:outline-none resize-none placeholder-gray-500"
+                disabled={isRoomClosed}
+              />
+              {similarity > 0 && (
+                <div className="flex items-center space-x-2 text-sm">
+                  <span className="text-gray-300">Similarity:</span>
+                  <span className={`font-semibold ${similarity > 70 ? 'text-red-400' : similarity > 40 ? 'text-yellow-400' : 'text-green-400'}`}>
+                    {similarity.toFixed(1)}%
+                  </span>
+                  {similarity > 70 && (
+                    <span className="text-red-400 text-xs">(Consider checking existing doubts)</span>
+                  )}
+                </div>
+              )}
+              <button
+                onClick={handleAddDoubt}
+                disabled={isRoomClosed || newDoubt.trim() === ''}
+                className="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 disabled:transform-none"
+              >
+                Submit Doubt
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Tabs for Active and Answered Doubts */}
+        <div className="mb-6">
+          <div className="flex space-x-1 bg-gray-800 bg-opacity-50 rounded-lg p-1">
+            <button
+              onClick={() => setActiveTab('active')}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                activeTab === 'active'
+                  ? 'bg-blue-600 text-white shadow-lg'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              Active Doubts ({sortedActiveDoubts.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('answered')}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                activeTab === 'answered'
+                  ? 'bg-green-600 text-white shadow-lg'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              Answered ({sortedAnsweredDoubts.length})
+            </button>
+          </div>
+        </div>
+
+        {/* Doubts Container */}
+        <div className="space-y-6">
+          {activeTab === 'active' ? (
+            <div>
+              <h3 className="text-xl font-semibold mb-4 flex items-center">
+                <FaQuestionCircle className="mr-2 text-blue-400" />
+                Active Doubts
+              </h3>
+              {sortedActiveDoubts.length === 0 ? (
+                <div className="text-center py-12 bg-white bg-opacity-5 rounded-xl border border-white border-opacity-10">
+                  <FaQuestionCircle className="text-6xl text-gray-400 mx-auto mb-4" />
+                  <p className="text-xl text-gray-300 mb-2">No active doubts</p>
+                  {role === 'participant' && (
+                    <p className="text-gray-400">Be the first to ask a question!</p>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {sortedActiveDoubts.map((doubt) => (
+                    <DoubtCard key={doubt.id} doubt={doubt} />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              <h3 className="text-xl font-semibold mb-4 flex items-center">
+                <FaCheckCircle className="mr-2 text-green-400" />
+                Answered Doubts
+              </h3>
+              {sortedAnsweredDoubts.length === 0 ? (
+                <div className="text-center py-12 bg-white bg-opacity-5 rounded-xl border border-white border-opacity-10">
+                  <FaCheckCircle className="text-6xl text-gray-400 mx-auto mb-4" />
+                  <p className="text-xl text-gray-300">No answered doubts yet</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {sortedAnsweredDoubts.map((doubt) => (
+                    <DoubtCard key={doubt.id} doubt={doubt} isAnswered={true} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
-      )}
-      {role === 'participant' && (
-        <div className='mt-10 flex flex-col items-center gap-3'>
-          <textarea
-            value={newDoubt}
-            onChange={handleDoubtChange}
-            placeholder='Enter your doubt...'
-            className='bg-gray-200 p-2 border-2 border-black rounded-lg w-full h-24 resize-none text-black placeholder-gray-500'
-            disabled={isRoomClosed}
-            />
-          <p>Your doubt is <span className='text-emerald-300'>{similarity.toFixed(2)}%</span> similar to a previously asked one</p>
-          <button
-            onClick={handleAddDoubt}
-            className='px-6 py-3 text-sm md:text-xl font-semibold bg-blue-600 hover:bg-blue-700 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300 md:mr-2 mb-2 cursor-pointer'
-            disabled={isRoomClosed}
-          >
-            Add Doubt
-          </button>
-        </div>
-      )}
-      <div className='flex justify-center'>
-      {role !== 'host' && (
-        <button onClick={handleLeaveRoom} className='px-6 py-3 text-sm md:text-xl font-semibold bg-red-600 hover:bg-red-700 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300 md:mr-2 mt-2 cursor-pointer'>Leave Room</button>
-      )}
       </div>
-      </div>
-      <div className='mt-2 h-96 overflow-y-scroll w-72 md:w-full max-w-7xl rounded-lg mb-20'>
-  <h2 className='mt-3 text-3xl text-center'>Doubts</h2>
-  {sortedDoubts.length === 0 ? (
-    role === 'participant' ? (<p className=' border border-gray-200 rounded-lg p-4 text-center text-xl text-gray-100 mt-10'>No doubts yet. <span className='text-emerald-300'>Be the first to ask!</span></p>) : (<p className=' rounded-lg p-4 text-center text-xl text-gray-100 mt-10'>No doubts yet.</p>)
-  ) : (
-    sortedDoubts.map((doubt) => (
-      <div
-        key={doubt.id}
-        className={`text-black mt-5 p-2 border-2 bg-gray-200 rounded-lg ${
-          doubt.answered ? 'line-through' : ''
-        }`}
-      >
-        <div className='flex justify-between items-center'>
-          <div>
-            <p className='text-2xl break-words overflow-wrap-anywhere'>{doubt.text}</p>
-            <p className='text-orange-500'>Upvotes: {doubt.upvotes}</p>
-          </div>
-          <div className='flex items-center'>
-            {role === 'host' && (
-              <>
-                <button
-                  onClick={() => handleToggleEmailVisibility(doubt.id)}
-                  className='text-xl bg-gray-600 hover:bg-gray-700 cursor-pointer p-1 rounded-lg text-white border-2 border-black ml-2'
-                >
-                  {visibleEmails.has(doubt.id) ? <FaEyeSlash /> : <FaEye />}
-                </button>
-                {visibleEmails.has(doubt.id) && <p className='ml-2'>{doubt.user}</p>}
-                {!doubt.answered && (
-                  <button
-                    onClick={() => handleMarkAsAnswered(doubt.id)}
-                    className='text-xl bg-green-600 hover:bg-green-700 cursor-pointer p-1 rounded-lg text-white border-2 border-black ml-2'
-                  >
-                    <FaCheck />
-                  </button>
-                )}
-              </>
-            )}
-            <FaThumbsUp
-              onClick={() => handleToggleUpvote(doubt.id)}
-              className={`text-xl cursor-pointer ml-2 ${
-                upvotedDoubts.has(doubt.id) ? 'text-blue-600' : 'text-gray-500'
-              }`}
-            />
-          </div>
-        </div>
-      </div>
-    ))
-  )}
-</div>
+
       <ToastContainer />
     </div>
   );
