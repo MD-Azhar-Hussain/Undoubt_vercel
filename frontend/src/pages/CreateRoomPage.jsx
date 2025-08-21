@@ -5,6 +5,7 @@ import { FaCopy, FaShareAlt, FaTimes, FaClock } from 'react-icons/fa';
 import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useAuth } from '../contexts/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL;
@@ -15,16 +16,32 @@ const CreateRoomPage = () => {
   const [showShare, setShowShare] = useState(false);
   const [countdown, setCountdown] = useState(30);
   const timerRef = useRef(null);
+  const { user } = useAuth();
 
   const handleCreateRoom = async () => {
+    if (!user || !user.id || !user.emailAddresses || !user.emailAddresses[0]) {
+      toast.error('User information not available. Please log in again.');
+      return;
+    }
+
     const newRoomId = Math.floor(10000 + Math.random() * 90000).toString();
+    const roomData = {
+      roomId: newRoomId,
+      hostId: user.id,
+      hostEmail: user.emailAddresses[0].emailAddress
+    };
+    
+    console.log('CreateRoomPage: Creating room with data', roomData);
+    
     try {
-      const response = await axios.post(`${API_BASE_URL}/rooms`, { roomId: newRoomId });
+      const response = await axios.post(`${API_BASE_URL}/rooms`, roomData);
+      console.log('CreateRoomPage: Room created successfully', response.data);
       setRoomId(newRoomId);
       toast.success('Room created successfully');
       setShowShare(true);
       setCountdown(30);
     } catch (error) {
+      console.error('CreateRoomPage: Failed to create room:', error);
       toast.error('Failed to create room');
     }
   };

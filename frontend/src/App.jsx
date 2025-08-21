@@ -2,7 +2,7 @@ import React, { useEffect, useState, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { logOut } from './config/firebase';
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute, { HostProtectedRoute } from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import CreateRoomPage from './pages/CreateRoomPage';
 import JoinRoomPage from './pages/JoinRoomPage';
@@ -98,7 +98,20 @@ const AppContent = () => {
 
   return (
     <Router>
-      {isAuthenticated && <Navigation />}
+      <AppRoutes isAuthenticated={isAuthenticated} />
+    </Router>
+  );
+};
+
+const AppRoutes = ({ isAuthenticated }) => {
+  const location = useLocation();
+  
+  // Check if current route is a room route
+  const isRoomRoute = location.pathname.startsWith('/room/') || location.pathname.startsWith('/host/');
+
+  return (
+    <>
+      {isAuthenticated && !isRoomRoute && <Navigation />}
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/access-denied" element={<AccessDeniedPage />} />
@@ -139,11 +152,11 @@ const AppContent = () => {
         <Route
           path="/host/:roomId"
           element={
-            <ProtectedRoute><RoomPage role="host" /></ProtectedRoute>
+            <HostProtectedRoute><RoomPage role="host" /></HostProtectedRoute>
           }
         />
       </Routes>
-    </Router>
+    </>
   );
 };
 

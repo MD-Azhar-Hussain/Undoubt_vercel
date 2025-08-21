@@ -6,10 +6,24 @@ const router = express.Router();
 
 // room create karne ke liye route
 router.post('/rooms', async (req, res) => {
-  const { roomId } = req.body;
-  const room = new Room({ roomId });
-  await room.save();
-  res.status(201).send({ message: 'Room created', room });
+  const { roomId, hostId, hostEmail } = req.body;
+  
+  console.log('Backend: Creating room with data', { roomId, hostId, hostEmail });
+  
+  if (!roomId || !hostId || !hostEmail) {
+    console.log('Backend: Missing required fields', { roomId: !!roomId, hostId: !!hostId, hostEmail: !!hostEmail });
+    return res.status(400).send({ message: 'Room ID, host ID, and host email are required' });
+  }
+  
+  try {
+    const room = new Room({ roomId, hostId, hostEmail });
+    await room.save();
+    console.log('Backend: Room created successfully', room);
+    res.status(201).send({ message: 'Room created', room });
+  } catch (error) {
+    console.error('Backend: Failed to create room:', error);
+    res.status(500).send({ message: 'Failed to create room', error: error.message });
+  }
 });
 
 // doubt submit karne ke liye route
@@ -25,6 +39,31 @@ router.get('/rooms/:roomId/doubts', async (req, res) => {
   const { roomId } = req.params;
   const doubts = await Doubt.find({ roomId });
   res.status(200).send(doubts);
+});
+
+// Check if user is host of a room
+router.get('/rooms/:roomId/host/:userId', async (req, res) => {
+  const { roomId, userId } = req.params;
+  
+  console.log('Backend: Checking host status', { roomId, userId });
+  
+  try {
+    const room = await Room.findOne({ roomId });
+    console.log('Backend: Found room', room);
+    
+    if (!room) {
+      console.log('Backend: Room not found');
+      return res.status(404).send({ message: 'Room not found' });
+    }
+    
+    const isHost = room.hostId === userId;
+    console.log('Backend: Host comparison', { roomHostId: room.hostId, userId, isHost });
+    
+    res.status(200).send({ isHost, room });
+  } catch (error) {
+    console.error('Backend: Error checking host status:', error);
+    res.status(500).send({ message: 'Failed to check host status', error: error.message });
+  }
 });
 
 // room close karne ke liye route

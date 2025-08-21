@@ -12,10 +12,15 @@ const server = http.createServer(app);
 
 // List of allowed origins
 const allowedOrigins = [
-  'https://undoubt.onrender.com', // Frontend URL
+  'https://undoubt.onrender.com', // Current frontend URL
   'https://expresso-frontend.onrender.com', // Another frontend URL if applicable
   'http://192.168.1.100:5173', // Local development frontend
   'http://localhost:5173', // Local development frontend (localhost)
+  'https://expresso-app.vercel.app', // Vercel frontend URL
+  'https://expresso-backend.vercel.app', // Vercel backend URL
+  'https://undoubt-nine.vercel.app', // Vercel frontend URL
+  'http://undoubt-nine.vercel.app', // Vercel frontend URL (http)
+  // Add your actual Vercel URLs here after deployment
 ];
 
 // Configure CORS for Express
