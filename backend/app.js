@@ -1,73 +1,161 @@
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const cors = require('cors');
-const mongoose = require('mongoose');
-const handleSocketConnection = require('./controllers/socketController');
-const routes = require('./routes/routes'); // Import routes
-require('dotenv').config(); // Load environment variables from .env file
+// const express = require('express');
+// const http = require('http');
+// const socketIo = require('socket.io');
+// const cors = require('cors');
+// const mongoose = require('mongoose');
+// const handleSocketConnection = require('./controllers/socketController');
+// const routes = require('./routes/routes'); // Import routes
+// require('dotenv').config(); // Load environment variables from .env file
+
+// const app = express();
+// const server = http.createServer(app);
+
+// // List of allowed origins
+// const allowedOrigins = [
+//   'https://undoubt.onrender.com', // Current frontend URL
+//   'https://expresso-frontend.onrender.com', // Another frontend URL if applicable
+//   'http://192.168.1.100:5173', // Local development frontend
+//   'http://localhost:5173', // Local development frontend (localhost)
+//   'https://expresso-app.vercel.app', // Vercel frontend URL
+//   'https://expresso-backend.vercel.app', // Vercel backend URL
+//   'https://undoubt-nine.vercel.app', // Vercel frontend URL
+//   'http://undoubt-nine.vercel.app', // Vercel frontend URL (http)
+//   'https://undoubt-vercel-4idc4w6q6-md-azhar-hussains-projects.vercel.app',
+//    'https://undoubt-vercel-1giwzjnwl-md-azhar-hussains-projects.vercel.app',
+//   // Add your actual Vercel URLs here after deployment
+// ];
+
+// // Configure CORS for Express
+// app.use(cors({
+//   origin: (origin, callback) => {
+//     if (!origin || allowedOrigins.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
+//   credentials: true, // Allow cookies and credentials
+// }));
+
+// // Configure CORS for Socket.IO
+// const io = socketIo(server, {
+//   cors: {
+//     origin: allowedOrigins, // Allow requests from multiple origins
+//     methods: ['GET', 'POST'], // Allowed HTTP methods
+//     credentials: true, // Allow cookies and credentials
+//   },
+// });
+
+// // Middleware to parse JSON bodies
+// app.use(express.json());
+
+// // Use routes with /api prefix
+// app.use('/api', routes);
+
+// // Connect to MongoDB Atlas
+// const mongoUri = process.env.MONGO_URI; // Use MONGO_URI from .env file
+// mongoose.connect(mongoUri)
+//   .then(() => console.log('MongoDB connected'))
+//   .catch(err => console.log(err));
+
+// // Handle Socket.IO connections
+// io.on('connection', (socket) => {
+//   console.log('New client connected');
+//   handleSocketConnection(io, socket);
+//   socket.on('disconnect', () => {
+//     console.log('Client disconnected');
+//   });
+// });
+
+// // Start the server
+// const PORT = process.env.PORT || 3000;
+// server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+const express = require("express");
+const http = require("http");
+const socketIo = require("socket.io");
+const cors = require("cors");
+const mongoose = require("mongoose");
+const handleSocketConnection = require("./controllers/socketController");
+const routes = require("./routes/routes");
+require("dotenv").config();
 
 const app = express();
 const server = http.createServer(app);
 
-// List of allowed origins
+// Allowed origins
 const allowedOrigins = [
-  'https://undoubt.onrender.com', // Current frontend URL
-  'https://expresso-frontend.onrender.com', // Another frontend URL if applicable
-  'http://192.168.1.100:5173', // Local development frontend
-  'http://localhost:5173', // Local development frontend (localhost)
-  'https://expresso-app.vercel.app', // Vercel frontend URL
-  'https://expresso-backend.vercel.app', // Vercel backend URL
-  'https://undoubt-nine.vercel.app', // Vercel frontend URL
-  'http://undoubt-nine.vercel.app', // Vercel frontend URL (http)
-  'https://undoubt-vercel-4idc4w6q6-md-azhar-hussains-projects.vercel.app',
-   'https://undoubt-vercel-1giwzjnwl-md-azhar-hussains-projects.vercel.app',
-  // Add your actual Vercel URLs here after deployment
+  "https://undoubt.onrender.com",
+  "https://expresso-frontend.onrender.com",
+  "http://192.168.1.100:5173",
+  "http://localhost:5173",
+  "https://expresso-app.vercel.app",
+  "https://expresso-backend.vercel.app",
+  "https://undoubt-nine.vercel.app",
+  "http://undoubt-nine.vercel.app",
+  "https://undoubt-vercel-4idc4w6q6-md-azhar-hussains-projects.vercel.app",
+  "https://undoubt-vercel-1giwzjnwl-md-azhar-hussains-projects.vercel.app",
 ];
 
-// Configure CORS for Express
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
-  credentials: true, // Allow cookies and credentials
-}));
+// Express CORS
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
 
-// Configure CORS for Socket.IO
+// Socket.IO with CORS
 const io = socketIo(server, {
   cors: {
-    origin: allowedOrigins, // Allow requests from multiple origins
-    methods: ['GET', 'POST'], // Allowed HTTP methods
-    credentials: true, // Allow cookies and credentials
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
-// Middleware to parse JSON bodies
+// Middleware
 app.use(express.json());
 
-// Use routes with /api prefix
-app.use('/api', routes);
+// Routes
+app.use("/api", routes);
 
-// Connect to MongoDB Atlas
-const mongoUri = process.env.MONGO_URI; // Use MONGO_URI from .env file
-mongoose.connect(mongoUri)
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.log(err));
+// MongoDB connection
+const mongoUri = process.env.MONGO_URI;
+mongoose
+  .connect(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => {
+    console.error("MongoDB connection error:", err.message);
+    process.exit(1);
+  });
 
-// Handle Socket.IO connections
-io.on('connection', (socket) => {
-  console.log('New client connected');
+// Socket.IO connection
+io.on("connection", (socket) => {
+  console.log("New client connected");
   handleSocketConnection(io, socket);
-  socket.on('disconnect', () => {
-    console.log('Client disconnected');
+  socket.on("disconnect", () => {
+    console.log("Client disconnected");
   });
 });
 
-// Start the server
+// Start server
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, "0.0.0.0", () =>
+  console.log(`Server running on port ${PORT}`)
+);
+
