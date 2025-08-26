@@ -84,21 +84,17 @@ require("dotenv").config();
 const app = express();
 const server = http.createServer(app);
 
-// Allowed origins
+// ✅ Single list of allowed origins (update this list as needed)
 const allowedOrigins = [
+  "https://undoubt-vercel-1giwzjnwl-md-azhar-hussains-projects.vercel.app",
+  "https://expresso-app.vercel.app",
   "https://undoubt.onrender.com",
   "https://expresso-frontend.onrender.com",
-  "http://192.168.1.100:5173",
-  "http://localhost:5173",
-  "https://expresso-app.vercel.app",
-  "https://expresso-backend.vercel.app",
-  "https://undoubt-nine.vercel.app",
-  "http://undoubt-nine.vercel.app",
-  "https://undoubt-vercel-4idc4w6q6-md-azhar-hussains-projects.vercel.app",
-  "https://undoubt-vercel-1giwzjnwl-md-azhar-hussains-projects.vercel.app",
+  "http://localhost:5173", // dev local
+  "http://192.168.1.100:5173", // dev local LAN
 ];
 
-// Express CORS
+// ✅ Express CORS middleware
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -113,16 +109,10 @@ app.use(
   })
 );
 
-// Socket.IO with CORS
+// ✅ Socket.IO shares same CORS config
 const io = socketIo(server, {
   cors: {
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -134,7 +124,7 @@ app.use(express.json());
 // Routes
 app.use("/api", routes);
 
-// MongoDB connection
+// ✅ MongoDB connection
 const mongoUri = process.env.MONGO_URI;
 mongoose
   .connect(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -144,7 +134,7 @@ mongoose
     process.exit(1);
   });
 
-// Socket.IO connection
+// ✅ Socket.IO handlers
 io.on("connection", (socket) => {
   console.log("New client connected");
   handleSocketConnection(io, socket);
@@ -153,9 +143,8 @@ io.on("connection", (socket) => {
   });
 });
 
-// Start server
+// ✅ Start server with 0.0.0.0 binding
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, "0.0.0.0", () =>
   console.log(`Server running on port ${PORT}`)
 );
-
