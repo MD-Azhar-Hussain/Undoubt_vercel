@@ -2,7 +2,7 @@ import React, { useEffect, useState, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { logOut } from './config/firebase';
-import ProtectedRoute, { HostProtectedRoute } from './components/ProtectedRoute';
+import ProtectedRoute, { HostProtectedRoute, ParticipantProtectedRoute } from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import CreateRoomPage from './pages/CreateRoomPage';
 import JoinRoomPage from './pages/JoinRoomPage';
@@ -146,7 +146,7 @@ const AppRoutes = ({ isAuthenticated }) => {
         <Route
           path="/room/:roomId"
           element={
-            <ProtectedRoute><RoomPage role="participant" /></ProtectedRoute>
+            <ParticipantProtectedRoute><RoomPage role="participant" /></ParticipantProtectedRoute>
           }
         />
         <Route

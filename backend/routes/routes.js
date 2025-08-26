@@ -6,9 +6,9 @@ const router = express.Router();
 
 // room create karne ke liye route
 router.post('/rooms', async (req, res) => {
-  const { roomId, hostId, hostEmail } = req.body;
+  const { roomId, hostId, hostEmail, topic } = req.body;
   
-  console.log('Backend: Creating room with data', { roomId, hostId, hostEmail });
+  console.log('Backend: Creating room with data', { roomId, hostId, hostEmail, topic });
   
   if (!roomId || !hostId || !hostEmail) {
     console.log('Backend: Missing required fields', { roomId: !!roomId, hostId: !!hostId, hostEmail: !!hostEmail });
@@ -16,7 +16,7 @@ router.post('/rooms', async (req, res) => {
   }
   
   try {
-    const room = new Room({ roomId, hostId, hostEmail });
+    const room = new Room({ roomId, hostId, hostEmail, topic });
     await room.save();
     console.log('Backend: Room created successfully', room);
     res.status(201).send({ message: 'Room created', room });
@@ -83,11 +83,14 @@ router.get('/doubts', async (req, res) => {
 // Check if room exists
 router.get('/rooms/:roomId', async (req, res) => {
   const { roomId } = req.params;
-  const roomExists = await Room.exists({ roomId });
-  if (roomExists) {
-    res.status(200).send({ exists: true });
-  } else {
-    res.status(404).send({ exists: false });
+  try {
+    const room = await Room.findOne({ roomId });
+    if (!room) {
+      return res.status(404).send({ exists: false });
+    }
+    res.status(200).send({ exists: true, room });
+  } catch (e) {
+    res.status(500).send({ message: 'Failed to fetch room', error: e.message });
   }
 });
 

@@ -14,6 +14,11 @@ const JoinRoomPage = () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/rooms/${roomId}`);
       if (response.data.exists) {
+        // Persist room name locally for immediate display
+        const topic = response.data?.room?.topic;
+        if (typeof topic === 'string' && topic.trim()) {
+          try { localStorage.setItem(`roomName:${roomId}`, topic.trim()); } catch (e) {}
+        }
         navigate(`/room/${roomId}`);
       } else {
         toast.error('Invalid Room ID');

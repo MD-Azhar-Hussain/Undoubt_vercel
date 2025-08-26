@@ -17,6 +17,7 @@ const CreateRoomPage = () => {
   const [countdown, setCountdown] = useState(30);
   const timerRef = useRef(null);
   const { user } = useAuth();
+  const [topic, setTopic] = useState('');
 
   const handleCreateRoom = async () => {
     if (!user || !user.id || !user.emailAddresses || !user.emailAddresses[0]) {
@@ -28,7 +29,8 @@ const CreateRoomPage = () => {
     const roomData = {
       roomId: newRoomId,
       hostId: user.id,
-      hostEmail: user.emailAddresses[0].emailAddress
+      hostEmail: user.emailAddresses[0].emailAddress,
+      topic: topic?.trim() || undefined,
     };
     
     console.log('CreateRoomPage: Creating room with data', roomData);
@@ -37,6 +39,13 @@ const CreateRoomPage = () => {
       const response = await axios.post(`${API_BASE_URL}/rooms`, roomData);
       console.log('CreateRoomPage: Room created successfully', response.data);
       setRoomId(newRoomId);
+      if (topic && topic.trim()) {
+        try {
+          localStorage.setItem(`roomName:${newRoomId}`, topic.trim());
+        } catch (e) {
+          // ignore storage errors
+        }
+      }
       toast.success('Room created successfully');
       setShowShare(true);
       setCountdown(30);
@@ -91,6 +100,17 @@ const CreateRoomPage = () => {
         <FaShareAlt className="text-blue-400 animate-bounce" />
         Create a Room
       </h1>
+      <div className="w-full max-w-md mb-3 animate-fade-in">
+        <label htmlFor="topic" className="block text-sm sm:text-base text-gray-200 mb-2">Topic of the room (optional)</label>
+        <input
+          id="topic"
+          type="text"
+          value={topic}
+          onChange={(e) => setTopic(e.target.value)}
+          placeholder="e.g., Linear Algebra Doubts"
+          className="w-full px-4 py-2 rounded-lg bg-gray-900/60 border border-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600 text-white"
+        />
+      </div>
       <button
         onClick={handleCreateRoom}
         disabled={showShare}
@@ -101,7 +121,8 @@ const CreateRoomPage = () => {
       {/* Share Modal/Section */}
       {showShare && roomId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 animate-fade-in">
-          <div className="bg-gradient-to-br from-purple-900 via-blue-900 to-black rounded-2xl shadow-2xl p-8 flex flex-col items-center relative w-[90vw] max-w-md animate-pop-in">
+          {/* Mobile popup (unchanged layout) */}
+          <div className="md:hidden bg-gradient-to-br from-purple-900 via-blue-900 to-black rounded-2xl shadow-2xl p-8 flex flex-col items-center relative w-[90vw] max-w-md animate-pop-in">
             <button
               onClick={handleSkipShare}
               className="absolute top-4 right-4 text-gray-300 hover:text-red-400 text-xl"
@@ -144,6 +165,63 @@ const CreateRoomPage = () => {
               >
                 Go to Room
               </button>
+            </div>
+          </div>
+
+          {/* Desktop popup (distinct layout) */}
+          <div className="hidden md:flex bg-gradient-to-br from-purple-900 via-blue-900 to-black rounded-none shadow-2xl p-12 relative w-screen h-screen max-w-none animate-pop-in">
+            <button
+              onClick={handleSkipShare}
+              className="absolute top-4 right-4 text-gray-300 hover:text-red-400 text-2xl"
+              title="Skip"
+            >
+              <FaTimes />
+            </button>
+            <div className="w-full h-full grid grid-cols-2 xl:grid-cols-3 gap-10 items-center">
+              <div className="flex flex-col items-center justify-center">
+                <div className="mb-6 p-6 bg-white rounded-xl">
+                  <QRCode value={roomId} size={320} />
+                </div>
+                <p className="text-xl mb-3 text-center">Room ID: <span className="font-mono text-orange-400 text-3xl">{roomId}</span></p>
+                <button
+                  onClick={handleCopyRoomId}
+                  className="px-6 py-3 text-base font-semibold bg-purple-600 hover:bg-purple-700 rounded-lg shadow-lg transition-transform duration-300"
+                >
+                  <FaCopy className="inline mr-2" />Copy Room ID
+                </button>
+              </div>
+
+              <div className="flex flex-col justify-center xl:col-span-2 overflow-y-auto pr-2">
+                <div className="flex items-center gap-4 mb-6">
+                  <FaShareAlt className="text-3xl text-blue-400" />
+                  <h2 className="text-4xl font-bold">Share Your Room</h2>
+                </div>
+                {topic?.trim() && (
+                  <p className="text-gray-200 mb-4 text-lg"><span className="text-gray-300">Topic:</span> <span className="font-semibold">{topic.trim()}</span></p>
+                )}
+                <span className="text-lg text-gray-200 mb-2">Share Link:</span>
+                <div className="flex items-center gap-3 mb-6">
+                  <span className="font-mono text-base bg-gray-900 px-4 py-3 rounded break-all max-w-4xl overflow-x-auto">{`${FRONTEND_URL}/room/${roomId}`}</span>
+                  <button
+                    onClick={handleCopyRoomLink}
+                    className="px-4 py-3 bg-blue-700 hover:bg-blue-800 rounded text-white text-sm font-semibold shadow"
+                  >
+                    <FaCopy className="inline mr-1" />Copy Link
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 text-lg text-gray-300">
+                  <FaClock />
+                  <span>Auto-redirecting in {countdown}s</span>
+                </div>
+                <div className="mt-8">
+                  <button
+                    onClick={handleGoToRoom}
+                    className="px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold shadow-lg transition-all duration-300 text-xl"
+                  >
+                    Go to Room
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

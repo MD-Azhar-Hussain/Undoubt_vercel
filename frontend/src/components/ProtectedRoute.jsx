@@ -94,15 +94,9 @@ const HostProtectedRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // Redirect to access denied if not the host
+  // If not the host, redirect to participant page for the same room
   if (!isHost) {
-    console.log('HostProtectedRoute: Access denied - user is not host', { 
-      roomId, 
-      userId: user?.id,
-      userEmail: user?.emailAddresses?.[0]?.emailAddress 
-    });
-    toast.error('Access denied: You are not the host of this room');
-    return <Navigate to="/access-denied" replace />;
+    return <Navigate to={`/room/${roomId}`} replace />;
   }
 
   // Render the protected component if user is the host
@@ -114,5 +108,52 @@ const HostProtectedRoute = ({ children }) => {
   return children;
 };
 
-export { ProtectedRoute, HostProtectedRoute };
+// Component for participant route that auto-redirects host to host page
+const ParticipantProtectedRoute = ({ children }) => {
+  const { user, loading, isAuthenticated } = useAuth();
+  const { roomId } = useParams();
+  const [isHost, setIsHost] = useState(null);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const check = async () => {
+      if (!isAuthenticated || !user || !roomId) {
+        setChecking(false);
+        return;
+      }
+      try {
+        const response = await axios.get(`${API_BASE_URL}/rooms/${roomId}/host/${user.id}`);
+        setIsHost(response.data.isHost);
+      } catch (e) {
+        setIsHost(false);
+      } finally {
+        setChecking(false);
+      }
+    };
+    check();
+  }, [isAuthenticated, user, roomId]);
+
+  if (loading || checking) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-800 to-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-white text-lg">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (isHost) {
+    return <Navigate to={`/host/${roomId}`} replace />;
+  }
+
+  return children;
+};
+
+export { ProtectedRoute, HostProtectedRoute, ParticipantProtectedRoute };
 export default ProtectedRoute;

@@ -17,3 +17,8 @@ export const getDoubts = async (roomId) => {
   return response.data;
 };
 
+export const getRoom = async (roomId) => {
+  const response = await axios.get(`${API_BASE_URL}/rooms/${roomId}`);
+  return response.data;
+};
+
