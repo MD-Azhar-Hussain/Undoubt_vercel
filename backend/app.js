@@ -20,6 +20,7 @@ const allowedOrigins = [
   'https://expresso-backend.vercel.app', // Vercel backend URL
   'https://undoubt-nine.vercel.app', // Vercel frontend URL
   'http://undoubt-nine.vercel.app', // Vercel frontend URL (http)
+  'https://undoubt-vercel-4idc4w6q6-md-azhar-hussains-projects.vercel.app',
   // Add your actual Vercel URLs here after deployment
 ];
 
