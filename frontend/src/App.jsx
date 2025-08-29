@@ -12,6 +12,7 @@ import ProductCatalogPage from './pages/ProductCatalogPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
+import DemoHomePage from './pages/DemoHomePage';
 import { account } from './utils/appwrite';
 import AccessDeniedPage from './pages/AccessDeniedPage';
 import { toast } from 'react-toastify';
@@ -240,6 +241,12 @@ const AppRoutes = ({ isAuthenticated }) => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/access-denied" element={<AccessDeniedPage />} />
         
+        {/* Demo eCommerce Homepage */}
+        <Route
+          path="/demo"
+          element={<DemoHomePage />}
+        />
+
         {/* Main eCommerce Routes */}
         <Route
           path="/"
