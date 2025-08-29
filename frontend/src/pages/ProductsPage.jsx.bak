@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { FiShoppingCart, FiSearch, FiHeart, FiArrowRight } from 'react-icons/fi';
 import { FaStar } from 'react-icons/fa';
-import './HomePage.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
@@ -43,13 +42,6 @@ const HomePage = () => {
     }
   };
 
-  // Try to use first or middle name, fallback to name or email
-  let userName = '';
-  if (user) {
-    const name = user.displayName || user.name || user.email || '';
-    userName = name.split(' ')[1] || name.split(' ')[0] || name;
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-800 to-black flex items-center justify-center">
@@ -66,13 +58,13 @@ const HomePage = () => {
       {/* Hero Section */}
       <section className="relative py-16 px-4 sm:py-20">
         <div className="max-w-7xl mx-auto text-center text-white">
-          <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 text-shadow-glow">
-            Welcome{userName ? `, ${userName}` : ''} to{' '}
+          <h1 className="text-4xl sm:text-6xl font-bold mb-6 text-shadow-glow">
+            Welcome to{' '}
             <span className="bg-gradient-to-r from-orange-400 to-pink-500 bg-clip-text text-transparent">
               ShopSphere
             </span>
           </h1>
-          <p className="text-base sm:text-lg md:text-2xl mb-8 sm:mb-10 px-4">
+          <p className="text-xl sm:text-2xl mb-8 text-gray-200">
             Discover amazing products at unbeatable prices
           </p>
 
@@ -97,18 +89,18 @@ const HomePage = () => {
           </form>
 
           {/* Hero CTAs */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-5 justify-center items-center w-full">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
               to="/products"
-              className="px-4 py-2 sm:px-6 sm:py-3 text-base sm:text-lg md:text-xl font-semibold bg-blue-600 hover:bg-blue-700 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300 flex items-center justify-center cursor-pointer min-w-[160px] sm:min-w-[180px]"
+              className="px-8 py-3 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 rounded-lg font-semibold text-lg transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
             >
-              <FiShoppingCart className="text-lg sm:text-xl"/><span className='ml-1.5'>Shop Now</span>
+              Shop Now <FiArrowRight />
             </Link>
             <Link
-              to="/products"
-              className="px-4 py-2 sm:px-6 sm:py-3 text-base sm:text-lg md:text-xl font-semibold bg-purple-600 hover:bg-purple-700 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300 flex items-center justify-center cursor-pointer min-w-[160px] sm:min-w-[180px]"
+              to="/categories"
+              className="px-8 py-3 bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 rounded-lg font-semibold text-lg transform hover:scale-105 transition-all duration-300"
             >
-              <FiArrowRight className="text-lg sm:text-xl"/> <span className='ml-2'>Browse Products</span>
+              Browse Categories
             </Link>
           </div>
         </div>
@@ -144,7 +136,7 @@ const HomePage = () => {
                 <h3 className="text-white font-semibold text-lg group-hover:text-orange-300 transition-colors">
                   {category.name}
                 </h3>
-                <p className="text-gray-300 text-sm mt-2 line-clamp-2">{category.description}</p>
+                <p className="text-gray-300 text-sm mt-2">{category.description}</p>
               </Link>
             ))}
           </div>
@@ -219,7 +211,7 @@ const HomePage = () => {
                       to={`/products/${product._id}`}
                       className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 flex items-center gap-2"
                     >
-                      <FiShoppingCart /> View
+                      <FiShoppingCart /> Add
                     </Link>
                   </div>
                 </div>

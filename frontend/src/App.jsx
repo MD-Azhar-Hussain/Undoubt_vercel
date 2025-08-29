@@ -8,16 +8,44 @@ import CreateRoomPage from './pages/CreateRoomPage';
 import JoinRoomPage from './pages/JoinRoomPage';
 import RoomPage from './pages/RoomPage';
 import LoginPage from './pages/LoginPage';
+import ProductCatalogPage from './pages/ProductCatalogPage';
+import ProductDetailPage from './pages/ProductDetailPage';
+import CartPage from './pages/CartPage';
+import CheckoutPage from './pages/CheckoutPage';
+import DemoHomePage from './pages/DemoHomePage';
 import { account } from './utils/appwrite';
 import AccessDeniedPage from './pages/AccessDeniedPage';
 import { toast } from 'react-toastify';
+import { FiShoppingCart, FiUser, FiSearch, FiMenu, FiX } from 'react-icons/fi';
+import axios from 'axios';
 import './App.css';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 const UserContext = createContext({ user: null, setUser: () => {} });
 export const useUser = () => useContext(UserContext);
 
 const Navigation = () => {
   const { user, isAuthenticated } = useAuth();
+  const [cartCount, setCartCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchCartCount();
+    }
+  }, [isAuthenticated, user]);
+
+  const fetchCartCount = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/cart/${user.id}`);
+      setCartCount(response.data.items?.length || 0);
+    } catch (error) {
+      console.error('Failed to fetch cart count:', error);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -28,54 +56,151 @@ const Navigation = () => {
     }
   };
 
-  return (
-    <nav className="flex justify-between items-center px-3 sm:px-5 py-2 sm:py-3 bg-gray-900 shadow-lg">
-      <Link className="text-2xl sm:text-3xl md:text-5xl font-bold text-gray-300 hover:text-orange-500 transition duration-300 cursor-pointer" to="/">
-        <span className="text-orange-500">Un</span>Doubt
-      </Link>
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      window.location.href = `/products?search=${encodeURIComponent(searchQuery.trim())}`;
+      setMobileMenuOpen(false);
+    }
+  };
 
-      <div className="flex items-center gap-2 sm:gap-4">
-        {isAuthenticated ? (
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden bg-gray-600 flex items-center justify-center">
-              {user.photoURL ? (
-                <img
-                  src={user.photoURL}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'flex';
-                  }}
-                />
-              ) : null}
-              <span
-                className="text-white text-xs sm:text-sm font-semibold"
-                style={{ display: user.photoURL ? 'none' : 'flex' }}
-              >
-                {user.firstName?.charAt(0)?.toUpperCase() || 'U'}
-              </span>
-            </div>
-            <span className="text-gray-300 text-sm sm:text-base hidden sm:inline">
-              {user.firstName} {user.lastName}
+  return (
+    <nav className="bg-white/10 backdrop-blur-md border-b border-white/20 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <Link to="/" className="flex items-center space-x-2">
+            <span className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-pink-500 bg-clip-text text-transparent">
+              ShopSphere
             </span>
-            <span className="text-gray-300 text-xs sm:hidden">
-              {user.firstName}
-            </span>
-            <button
-              onClick={handleLogout}
-              className="px-2 py-1 sm:px-5 sm:py-2 text-xs sm:text-sm bg-red-600 hover:bg-red-700 rounded transition duration-300"
-            >
-              Logout
-            </button>
-          </div>
-        ) : (
-          <Link
-            to="/login"
-            className="px-3 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 rounded transition duration-300"
-          >
-            Login
           </Link>
+
+          {/* Desktop Search Bar */}
+          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-lg mx-8">
+            <div className="relative w-full">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search products..."
+                className="w-full px-4 py-2 pl-10 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            </div>
+          </form>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-6">
+            <Link to="/products" className="text-white hover:text-orange-300 transition-colors">
+              Products
+            </Link>
+            
+            {isAuthenticated ? (
+              <>
+                <Link 
+                  to="/cart" 
+                  className="text-white hover:text-orange-300 transition-colors relative"
+                >
+                  <FiShoppingCart className="text-xl" />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {cartCount}
+                    </span>
+                  )}
+                </Link>
+                <div className="flex items-center space-x-2">
+                  <FiUser className="text-white" />
+                  <span className="text-white text-sm">
+                    {user.displayName?.split(' ')[0] || 'User'}
+                  </span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="px-3 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm bg-red-600 hover:bg-red-700 rounded transition duration-300"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className="px-3 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 rounded transition duration-300"
+              >
+                Login
+              </Link>
+            )}
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 text-white"
+          >
+            {mobileMenuOpen ? <FiX className="text-xl" /> : <FiMenu className="text-xl" />}
+          </button>
+        </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden py-4 border-t border-white/20">
+            {/* Mobile Search */}
+            <form onSubmit={handleSearch} className="mb-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search products..."
+                  className="w-full px-4 py-2 pl-10 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              </div>
+            </form>
+
+            <div className="space-y-2">
+              <Link 
+                to="/products" 
+                className="block text-white hover:text-orange-300 transition-colors py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Products
+              </Link>
+              
+              {isAuthenticated ? (
+                <>
+                  <Link 
+                    to="/cart" 
+                    className="flex items-center text-white hover:text-orange-300 transition-colors py-2"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <FiShoppingCart className="mr-2" />
+                    Cart {cartCount > 0 && `(${cartCount})`}
+                  </Link>
+                  <div className="flex items-center py-2 text-white">
+                    <FiUser className="mr-2" />
+                    {user.displayName?.split(' ')[0] || 'User'}
+                  </div>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="block w-full text-left text-white hover:text-red-300 transition-colors py-2"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  className="block text-white hover:text-blue-300 transition-colors py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Login
+                </Link>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </nav>
@@ -106,7 +231,7 @@ const AppContent = () => {
 const AppRoutes = ({ isAuthenticated }) => {
   const location = useLocation();
   
-  // Check if current route is a room route
+  // Check if current route is a room route (keeping old functionality for backward compatibility)
   const isRoomRoute = location.pathname.startsWith('/room/') || location.pathname.startsWith('/host/');
 
   return (
@@ -115,6 +240,14 @@ const AppRoutes = ({ isAuthenticated }) => {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/access-denied" element={<AccessDeniedPage />} />
+        
+        {/* Demo eCommerce Homepage */}
+        <Route
+          path="/demo"
+          element={<DemoHomePage />}
+        />
+
+        {/* Main eCommerce Routes */}
         <Route
           path="/"
           element={
@@ -125,6 +258,28 @@ const AppRoutes = ({ isAuthenticated }) => {
             )
           }
         />
+        <Route
+          path="/products"
+          element={<ProductCatalogPage />}
+        />
+        <Route
+          path="/products/:id"
+          element={<ProductDetailPage />}
+        />
+        <Route
+          path="/cart"
+          element={
+            <ProtectedRoute><CartPage /></ProtectedRoute>
+          }
+        />
+        <Route
+          path="/checkout"
+          element={
+            <ProtectedRoute><CheckoutPage /></ProtectedRoute>
+          }
+        />
+
+        {/* Legacy Room Routes (keeping for backward compatibility) */}
         <Route
           path="/create-room"
           element={
